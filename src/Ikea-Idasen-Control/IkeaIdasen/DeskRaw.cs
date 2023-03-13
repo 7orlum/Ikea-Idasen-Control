@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices.WindowsRuntime;
+﻿using System.Net.NetworkInformation;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Storage.Streams;
@@ -25,11 +26,15 @@ public class DeskRaw : IDisposable
 
     public DeskCapabilities Capabilities => _capabilities;
 
-    public static async Task<DeskRaw> ConnectAsync(BluetoothLEDevice device)
+    public static async Task<DeskRaw> ConnectAsync(PhysicalAddress bluetoothAddress)
     {
-        var result = new DeskRaw();
-
-        result._device = device;
+        var result = new DeskRaw()
+        {
+            _device =
+                await BluetoothLEDevice.FromBluetoothAddressAsync(PhysicalAddressToUInt64(bluetoothAddress)) ??
+                throw new DeskNotFoundException("Desk not found")
+        };
+        
         await result.ConnectAsync();
         await result.SetUserIdAsync(await result.GetUserIdAsync()); //SetMemoryPositionRawAsync doesn't work whithout it!
         result._capabilities = await result.GetCapabilities();
@@ -121,6 +126,9 @@ public class DeskRaw : IDisposable
         Disconnect();
     }
 
+    private static ulong PhysicalAddressToUInt64(PhysicalAddress address) =>
+        BitConverter.ToUInt64(address.GetAddressBytes().Reverse().Concat(new byte[] { 0, 0 }).ToArray());
+
     private async Task<DeskCapabilities> GetCapabilities()
     {
         var data = new byte[] { 0x7f, (byte)DPGCommand.Capabilities, 0x00 };
@@ -199,8 +207,6 @@ public class DeskRaw : IDisposable
 
     private async Task ConnectAsync()
     {
-        Disconnect();
-
         _nameService = await GetServiceAsync(BLEConstants.NameServiceUUID);
         //_modelService = await GetServiceAsync(BLEConstants.ModelServiceUUID);
         _controlService = await GetServiceAsync(BLEConstants.ControlServiceUUID);
@@ -218,6 +224,7 @@ public class DeskRaw : IDisposable
 
     private void Disconnect()
     {
+        _device?.Dispose();
         _nameService?.Dispose();
         //_modelService?.Dispose();
         _controlService?.Dispose();

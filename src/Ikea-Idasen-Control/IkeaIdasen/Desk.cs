@@ -1,4 +1,4 @@
-﻿using Windows.Devices.Bluetooth;
+﻿using System.Net.NetworkInformation;
 
 ///<summary>
 ///Counts the height from the floor level in millimeters, 
@@ -10,11 +10,11 @@ public class Desk : IDisposable
 
     public DeskCapabilities Capabilities => _deskRaw.Capabilities;
 
-    public static async Task<Desk> ConnectAsync(BluetoothLEDevice device)
+    public static async Task<Desk> ConnectAsync(PhysicalAddress bluetoothAddress)
     {
         return new Desk()
         {
-            _deskRaw = await DeskRaw.ConnectAsync(device)
+            _deskRaw = await DeskRaw.ConnectAsync(bluetoothAddress)
         };
     }
 

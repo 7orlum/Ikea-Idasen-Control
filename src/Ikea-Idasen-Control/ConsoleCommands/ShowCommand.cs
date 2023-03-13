@@ -1,16 +1,9 @@
-﻿using ManyConsole;
-using System.Net.NetworkInformation;
-using Windows.Devices.Bluetooth;
-
-internal class ShowCommand : ConsoleCommand
+﻿internal class ShowCommand : DeskConsoleCommand
 {
-    public string Address { get; set; } = null!;
-
-    public ShowCommand()
+    public ShowCommand() : base()
     {
         IsCommand("Show", "shows the current state of the Idasen desk");
         HasLongDescription("The desks must already be paired to the computer.");
-        HasRequiredOption("a|address=", "address of the desk like ec:02:09:df:8e:d8. You can get your desk address calling the program with the parameter List", address => Address = address?? string.Empty);
     }
 
     public override int Run(string[] remainingArguments)
@@ -20,29 +13,14 @@ internal class ShowCommand : ConsoleCommand
 
     private async Task<bool> ShowIdasenDeskStatusAsync()
     {
-        if (!PhysicalAddress.TryParse(Address, out var physicalAddress))
-        {
-            Console.WriteLine($"Address {Address} is wrong. It must be like 'ec:02:09:df:8e:d8'. You can get your desk address calling the program with the parameter List");
-            return false;
-        }
+        using var desk = await GetDeskAsync();
 
-        using var device = await BluetoothLEDevice.FromBluetoothAddressAsync(ToUInt64(physicalAddress));
-        if (device == null)
-        {
-            Console.WriteLine($"Idasen desk {Address} not found");
-            return false;
-        }
-
-        using var desk = await Desk.ConnectAsync(device);
         Console.WriteLine($"Name {await desk.GetNameAsync(),21}");
         Console.WriteLine($"Current height    {await desk.GetHeightAsync(),5:0} mm");
         Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
-        for (var cellNumber = 1; cellNumber <= desk.Capabilities.NumberOfMemoryCells; cellNumber++)
-            Console.WriteLine($"Memory position {cellNumber} {await desk.GetMemoryValueAsync(cellNumber),5:0} mm");
+        for (var memoryCellNumber = 1; memoryCellNumber <= desk.Capabilities.NumberOfMemoryCells; memoryCellNumber++)
+            Console.WriteLine($"Memory position {memoryCellNumber} {await desk.GetMemoryValueAsync(memoryCellNumber),5:0} mm");
 
         return true;
     }
-
-    private ulong ToUInt64(PhysicalAddress address) =>
-        BitConverter.ToUInt64(address.GetAddressBytes().Reverse().Concat(new byte[] { 0, 0 }).ToArray());
 }
