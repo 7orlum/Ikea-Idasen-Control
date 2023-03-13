@@ -36,7 +36,7 @@ internal class SetCommand : ConsoleCommand
 
         using var desk = await Desk.ConnectAsync(device);
 
-        if (!TryParseMemoryCellNumber(memoryString, out byte memoryCell))
+        if (!TryParseMemoryCellNumber(memoryString, out byte cellNumber))
         {
             Console.WriteLine($"Memory cell number {memoryString} is wrong. It must be like 'm1'");
             return false;
@@ -53,23 +53,23 @@ internal class SetCommand : ConsoleCommand
             return false;
         }
 
-        Console.WriteLine($"Writing {heightMm:0} mm into memory cell {memoryCell}");
+        Console.WriteLine($"Writing {heightMm:0} mm into memory cell {cellNumber}");
 
-        await desk.SetMemoryValueAsync(memoryCell - 1, heightMm);
+        await desk.SetMemoryValueAsync(cellNumber, heightMm);
 
-        for (var cellNumber = 0; cellNumber < desk.Capabilities.MemoryCells; cellNumber++)
-            Console.WriteLine($"Memory position {cellNumber + 1} {await desk.GetMemoryValueAsync(cellNumber),5:0} mm");
+        for (cellNumber = 1; cellNumber <= desk.Capabilities.NumberOfMemoryCells; cellNumber++)
+            Console.WriteLine($"Memory position {cellNumber} {await desk.GetMemoryValueAsync(cellNumber),5:0} mm");
         Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
 
         return true;
     }
 
-    private bool TryParseMemoryCellNumber(string value, out byte memoryCell)
+    private bool TryParseMemoryCellNumber(string value, out byte cellNumber)
     {
-        memoryCell = default;
+        cellNumber = default;
 
         if (value.StartsWith("m", StringComparison.InvariantCultureIgnoreCase))
-            return byte.TryParse(value[1..], out memoryCell);
+            return byte.TryParse(value[1..], out cellNumber);
         else
             return false;
     }

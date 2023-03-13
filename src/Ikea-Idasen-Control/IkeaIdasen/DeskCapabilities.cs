@@ -1,5 +1,5 @@
 ﻿public record DeskCapabilities (
-    int MemoryCells, 
+    int NumberOfMemoryCells, 
     bool AutoUp,
     bool AutoDown,
     bool BleAllowed,

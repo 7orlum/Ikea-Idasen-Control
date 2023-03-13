@@ -37,11 +37,11 @@ internal class MoveCommand : ConsoleCommand
         using var desk = await Desk.ConnectAsync(device);
 
         float heightMm;
-        if (TryParseMemoryCellNumber(value, out byte memoryCell))
+        if (TryParseMemoryCellNumber(value, out byte cellNumber))
         {
             try
             {
-                heightMm = await desk.GetMemoryValueAsync(memoryCell - 1);
+                heightMm = await desk.GetMemoryValueAsync(cellNumber);
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -64,12 +64,12 @@ internal class MoveCommand : ConsoleCommand
         return true;
     }
 
-    private bool TryParseMemoryCellNumber(string value, out byte memoryCell)
+    private bool TryParseMemoryCellNumber(string value, out byte cellNumber)
     {
-        memoryCell = default;
+        cellNumber = default;
 
         if (value.StartsWith("m", StringComparison.InvariantCultureIgnoreCase))
-            return byte.TryParse(value[1..], out memoryCell);
+            return byte.TryParse(value[1..], out cellNumber);
         else
             return false;
     }

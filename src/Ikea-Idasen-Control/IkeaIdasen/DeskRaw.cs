@@ -108,18 +108,12 @@ public class DeskRaw : IDisposable
 
     public async Task<ushort> GetMemoryValueAsync(int cellNumber)
     {
-        if (cellNumber >= Capabilities.MemoryCells)
-            throw new ArgumentOutOfRangeException(nameof(cellNumber), "There are no requested memory cells. Check Desk.Capabilities.MemoryCells to get the total number of memory cells");
-
         return await QueryUInt16Async(GetMemoryPositionCommand(cellNumber));
     }
 
-    public async Task SetMemoryValueAsync(int cellNumber, ushort heightRaw)
+    public async Task SetMemoryValueAsync(int cellNumber, ushort value)
     {
-        if (cellNumber >= Capabilities.MemoryCells)
-            throw new ArgumentOutOfRangeException(nameof(cellNumber), "There are no requested memory cells. Check Desk.Capabilities.MemoryCells to get the total number of memory cells");
-
-        await QueryBytesAsync(GetMemoryPositionCommand(cellNumber), heightRaw);
+        await QueryBytesAsync(GetMemoryPositionCommand(cellNumber), value);
     }
 
     public void Dispose()
@@ -137,7 +131,7 @@ public class DeskRaw : IDisposable
             throw new InvalidOperationException();
 
         return new DeskCapabilities(
-            MemoryCells: (byte)(bytes[2] & 0b0000_0111),
+            NumberOfMemoryCells: (byte)(bytes[2] & 0b0000_0111),
             AutoUp: (bytes[2] & 0b0000_1000) != 0,
             AutoDown: (bytes[2] & 0b0001_0000) != 0,
             BleAllowed: (bytes[2] & 0b0010_0000) != 0,
@@ -148,11 +142,13 @@ public class DeskRaw : IDisposable
 
     private DPGCommand GetMemoryPositionCommand(int cellNumber) => cellNumber switch
     {
-        0 => DPGCommand.MemoryPosition1,
-        1 => DPGCommand.MemoryPosition2,
-        2 => DPGCommand.MemoryPosition3,
-        3 => DPGCommand.MemoryPosition4,
-        _ => throw new InvalidOperationException()
+        <= 0 => throw new ArgumentOutOfRangeException(nameof(cellNumber), "Invalid memory cell number. Must be greater that zero"),
+        1 => DPGCommand.MemoryPosition1,
+        2 => DPGCommand.MemoryPosition2,
+        3 => DPGCommand.MemoryPosition3,
+        4 => DPGCommand.MemoryPosition4,
+        _ => throw new ArgumentOutOfRangeException(nameof(cellNumber),
+            $"Invalid memory cell number. Check {nameof(DeskRaw)}.{nameof(Capabilities)}.{nameof(Capabilities.NumberOfMemoryCells)} to get the total number of memory cells. Memory cells numbering starts with one")
     };
 
     private async Task StartMovementAsync()
