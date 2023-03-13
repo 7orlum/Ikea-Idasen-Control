@@ -1,0 +1,90 @@
+﻿using ManyConsole;
+using System.Net.NetworkInformation;
+using Windows.Devices.Bluetooth;
+
+internal class SetCommand : ConsoleCommand
+{
+    public string Address { get; set; } = null!;
+
+    public SetCommand()
+    {
+        IsCommand("Set", "sets the Idasen desk memory position to the specified height");
+        HasLongDescription("The desks must already be paired to the computer.");
+        HasRequiredOption("a|address=", "address of the desk like ec:02:09:df:8e:d8. You can get your desk address calling the program with the parameter List", address => Address = address ?? string.Empty);
+        HasAdditionalArguments(2, "memory cell in the format: m{number of memory cell} and the target height in millimeters which be written to the memory cell or 'current' to write current height.");
+    }
+
+    public override int Run(string[] remainingArguments)
+    {
+        return RememberHeightToMemoryAsync(remainingArguments[0], remainingArguments[1]).Result ? 0 : 1;
+    }
+
+    private async Task<bool> RememberHeightToMemoryAsync(string memoryString, string heightString)
+    {
+        if (!PhysicalAddress.TryParse(Address, out var physicalAddress))
+        {
+            Console.WriteLine($"Address {Address} is wrong. It must be like 'ec:02:09:df:8e:d8'. You can get your desk address calling the program with the parameter List");
+            return false;
+        }
+
+        using var device = await BluetoothLEDevice.FromBluetoothAddressAsync(ToUInt64(physicalAddress));
+        if (device == null)
+        {
+            Console.WriteLine($"Idasen desk {Address} not found");
+            return false;
+        }
+
+        using var desk = await Desk.ConnectAsync(device);
+
+        if (!TryParseMemoryCell(memoryString, out byte memoryCell))
+        {
+            Console.WriteLine($"Memory cell number {memoryString} is wrong. It must be like 'm1'");
+            return false;
+        }
+
+        float heightMm;
+        if (TryParseCurrent(heightString))
+        {
+            heightMm = desk.MmFromRaw(await desk.GetOffsetRawAsync() + await desk.GetHeightRawAsync());
+        }
+        else if (!TryParseHeight(heightString, out heightMm))
+        {
+            Console.WriteLine($"Height {heightString} is wrong. It must be like '183' if you define it in millimeters, or 'current' if you want to get the current height");
+            return false;
+        }
+
+        Console.WriteLine($"Writing {heightMm:0} mm into memory cell {memoryCell}");
+
+        ushort heightRaw = desk.RawFromMmAsync(heightMm - desk.MmFromRaw(await desk.GetOffsetRawAsync()));
+        await desk.SetMemoryPositionRawAsync(memoryCell - 1, heightRaw);
+
+        for (var cellNumber = 0; cellNumber < desk.Capabilities.MemoryCells; cellNumber++)
+            Console.WriteLine($"Memory position {cellNumber + 1} {desk.MmFromRaw(await desk.GetOffsetRawAsync() + await desk.GetMemoryPositionRawAsync(cellNumber)),5:0} mm");
+        Console.WriteLine($"Minimum height    {desk.MmFromRaw(await desk.GetOffsetRawAsync()),5:0} mm");
+
+        return true;
+    }
+
+    private bool TryParseMemoryCell(string value, out byte memoryCell)
+    {
+        memoryCell = default;
+
+        if (value.StartsWith("m", StringComparison.InvariantCultureIgnoreCase))
+            return byte.TryParse(value[1..], out memoryCell);
+        else
+            return false;
+    }
+
+    private bool TryParseCurrent(string value)
+    {
+        return value.Equals("current", StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    private bool TryParseHeight(string value, out float height)
+    {
+        return float.TryParse(value, out height);
+    }
+
+    private ulong ToUInt64(PhysicalAddress address) =>
+        BitConverter.ToUInt64(address.GetAddressBytes().Reverse().Concat(new byte[] { 0, 0 }).ToArray());
+}

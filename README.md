@@ -1,0 +1,1 @@
+﻿A CLI utility to control IKEA Idasen desks or others that use one of the LINAK DPG controllers with BLE.
