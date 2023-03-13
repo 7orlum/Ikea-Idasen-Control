@@ -13,7 +13,7 @@ public abstract class DeskConsoleCommand : ConsoleCommand
     protected async Task<Desk> GetDeskAsync()
     {
         if (!PhysicalAddress.TryParse(Address, out var physicalAddress))
-            throw new ArgumentException($"Address {Address} is wrong. It must be like 'ec:02:09:df:8e:d8'. You can get your desk address calling the program with the parameter List");
+            throw new WrongCommandParameterException($"Address {Address} is wrong. It must be like 'ec:02:09:df:8e:d8'. You can get your desk address calling the program with the parameter List");
 
         return await Desk.ConnectAsync(physicalAddress);
     }
@@ -36,5 +36,33 @@ public abstract class DeskConsoleCommand : ConsoleCommand
             return byte.TryParse(value[1..], out memoryCellNumber);
         else
             return false;
+    }
+
+    protected int RunWithExceptionCatching(Func<Task> action)
+    {
+        try
+        {
+            action().Wait();
+            return 0;
+        }
+        catch (AggregateException ex)
+        {
+            foreach(var e in ex.Flatten().InnerExceptions)
+            {
+                if (e is DeskNotFoundException ||
+                    e is WrongMemoryCellNumberException ||
+                    e is WrongCommandParameterException)
+                {
+                    Console.WriteLine(e.Message);
+                }
+                else if (e is System.Runtime.InteropServices.COMException)
+                {
+                    Console.WriteLine($"Desk connection lost");
+                }
+                else
+                    throw;
+            };
+            return 1;
+        }
     }
 }

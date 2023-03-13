@@ -57,8 +57,6 @@ public class DeskRaw : IDisposable
     public async Task<byte[]> GetUserIdAsync()
     {
         var result = await QueryBytesAsync(DPGCommand.UserID);
-        if (result[2] != 1)
-            throw new InvalidOperationException();
         return result[3..];
     }
 
@@ -150,12 +148,12 @@ public class DeskRaw : IDisposable
 
     private DPGCommand GetMemoryPositionCommand(int cellNumber) => cellNumber switch
     {
-        <= 0 => throw new ArgumentOutOfRangeException(nameof(cellNumber), "Invalid memory cell number. Must be greater that zero"),
+        <= 0 => throw new WrongMemoryCellNumberException("Invalid memory cell number. Must be greater that zero"),
         1 => DPGCommand.MemoryPosition1,
         2 => DPGCommand.MemoryPosition2,
         3 => DPGCommand.MemoryPosition3,
         4 => DPGCommand.MemoryPosition4,
-        _ => throw new ArgumentOutOfRangeException(nameof(cellNumber),
+        _ => throw new WrongMemoryCellNumberException(
             $"Invalid memory cell number. Check {nameof(DeskRaw)}.{nameof(Capabilities)}.{nameof(Capabilities.NumberOfMemoryCells)} to get the total number of memory cells. Memory cells numbering starts with one")
     };
 

@@ -9,27 +9,21 @@
 
     public override int Run(string[] remainingArguments)
     {
-        return SetMinHeightAsync(remainingArguments[0]).Result ? 0 : 1;
+        return RunWithExceptionCatching(async () => await SetMinHeightAsync(remainingArguments[0]));
     }
 
-    private async Task<bool> SetMinHeightAsync(string heightString)
+    private async Task SetMinHeightAsync(string heightString)
     {
         using var desk = await GetDeskAsync();
 
-        if (!TryParseHeight(heightString, out float height))
-        {
-            Console.WriteLine($"Height {heightString} is wrong. It must be like '183'");
-            return false;
-        }
+        float height;
+        if (!TryParseHeight(heightString, out height))
+            throw new WrongCommandParameterException($"Height {heightString} is wrong. It must be like '183'");
 
         Console.WriteLine($"Writing {height:0} mm as the desk's height in the the lowest position");
-
         await desk.SetMinHeightAsync(height);
-
         for (var memoryCellNumber = 1; memoryCellNumber <= desk.Capabilities.NumberOfMemoryCells; memoryCellNumber++)
             Console.WriteLine($"Memory position {memoryCellNumber} {desk.GetMemoryValueAsync(memoryCellNumber),5:0} mm");
         Console.WriteLine($"Minimum height    {desk.GetMinHeightAsync(),5:0} mm");
-
-        return true;
     }
 }

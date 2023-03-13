@@ -9,38 +9,27 @@
 
     public override int Run(string[] remainingArguments)
     {
-        return RememberHeightToMemoryAsync(remainingArguments[0], remainingArguments[1]).Result ? 0 : 1;
+        return RunWithExceptionCatching(async () => await SetMemoryValueAsync(remainingArguments[0], remainingArguments[1]));
     }
 
-    private async Task<bool> RememberHeightToMemoryAsync(string memoryString, string heightString)
+    private async Task SetMemoryValueAsync(string memoryString, string heightString)
     {
         using var desk = await GetDeskAsync();
 
-        if (!TryParseMemoryCellNumber(memoryString, out byte memoryCellNumber))
-        {
-            Console.WriteLine($"Memory cell number {memoryString} is wrong. It must be like 'm1'");
-            return false;
-        }
+        byte memoryCellNumber;
+        if (!TryParseMemoryCellNumber(memoryString, out memoryCellNumber))
+            throw new WrongCommandParameterException($"Memory cell number {memoryString} is wrong. It must be like 'm1'");
 
         float height;
         if (TryParseCurrent(heightString))
-        {
             height = await desk.GetHeightAsync();
-        }
         else if (!TryParseHeight(heightString, out height))
-        {
-            Console.WriteLine($"Height {heightString} is wrong. It must be like '183' if you define it in millimeters, or 'current' if you want to get the current height");
-            return false;
-        }
+            throw new WrongCommandParameterException($"Height {heightString} is wrong. It must be like '183' if you define it in millimeters, or 'current' if you want to get the current height");
 
         Console.WriteLine($"Writing {height:0} mm into memory cell {memoryCellNumber}");
-
         await desk.SetMemoryValueAsync(memoryCellNumber, height);
-
         for (memoryCellNumber = 1; memoryCellNumber <= desk.Capabilities.NumberOfMemoryCells; memoryCellNumber++)
             Console.WriteLine($"Memory position {memoryCellNumber} {await desk.GetMemoryValueAsync(memoryCellNumber),5:0} mm");
         Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
-
-        return true;
     }
 }

@@ -8,10 +8,10 @@
 
     public override int Run(string[] remainingArguments)
     {
-        return ShowIdasenDeskStatusAsync().Result ? 0 : 1;
+        return RunWithExceptionCatching(async () => await ShowDeskStateAsync());
     }
 
-    private async Task<bool> ShowIdasenDeskStatusAsync()
+    private async Task ShowDeskStateAsync()
     {
         using var desk = await GetDeskAsync();
 
@@ -20,7 +20,5 @@
         Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
         for (var memoryCellNumber = 1; memoryCellNumber <= desk.Capabilities.NumberOfMemoryCells; memoryCellNumber++)
             Console.WriteLine($"Memory position {memoryCellNumber} {await desk.GetMemoryValueAsync(memoryCellNumber),5:0} mm");
-
-        return true;
     }
 }

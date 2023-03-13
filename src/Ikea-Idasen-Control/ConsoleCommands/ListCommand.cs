@@ -14,7 +14,7 @@ internal class ListCommand : ConsoleCommand
         Console.WriteLine("Please wait, the list of devices is forming");
         Console.WriteLine();
 
-        var devices = IdasenDeskListAsync().Result;
+        var devices = DeskListAsync().Result;
         Console.WriteLine("Address\t\t\tName\t\tStatus");
         foreach (var device in devices)
             Console.WriteLine($"{device.Address}\t{device.Name}\t{device.Status}");
@@ -22,7 +22,7 @@ internal class ListCommand : ConsoleCommand
         return 0;
     }
 
-    async Task<IEnumerable<Device>> IdasenDeskListAsync()
+    private async Task<IEnumerable<Device>> DeskListAsync()
     {
         var result = new List<Device>();
 
@@ -43,5 +43,5 @@ internal class ListCommand : ConsoleCommand
             .ToArray();
     }
 
-    record Device(string Address, string Name, string Status);
+    private record Device(string Address, string Name, string Status);
 }
