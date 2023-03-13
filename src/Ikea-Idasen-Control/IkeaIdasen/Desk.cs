@@ -41,7 +41,7 @@ public class Desk : IDisposable
         return result switch
         {
             <= 0 => 0,
-            >= ushort.MaxValue => ushort.MaxValue,
+            >= ushort.MaxValue - 1 => ushort.MaxValue - 1,
             _ => Convert.ToUInt16(result)
         };
     }
