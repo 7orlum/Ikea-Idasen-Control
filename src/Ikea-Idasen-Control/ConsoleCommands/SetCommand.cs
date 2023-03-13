@@ -36,7 +36,7 @@ internal class SetCommand : ConsoleCommand
 
         using var desk = await Desk.ConnectAsync(device);
 
-        if (!TryParseMemoryCell(memoryString, out byte memoryCell))
+        if (!TryParseMemoryCellNumber(memoryString, out byte memoryCell))
         {
             Console.WriteLine($"Memory cell number {memoryString} is wrong. It must be like 'm1'");
             return false;
@@ -45,7 +45,7 @@ internal class SetCommand : ConsoleCommand
         float heightMm;
         if (TryParseCurrent(heightString))
         {
-            heightMm = desk.MmFromRaw(await desk.GetOffsetRawAsync() + await desk.GetHeightRawAsync());
+            heightMm = await desk.GetHeightAsync();
         }
         else if (!TryParseHeight(heightString, out heightMm))
         {
@@ -55,17 +55,16 @@ internal class SetCommand : ConsoleCommand
 
         Console.WriteLine($"Writing {heightMm:0} mm into memory cell {memoryCell}");
 
-        ushort heightRaw = desk.RawFromMmAsync(heightMm - desk.MmFromRaw(await desk.GetOffsetRawAsync()));
-        await desk.SetMemoryPositionRawAsync(memoryCell - 1, heightRaw);
+        await desk.SetMemoryValueAsync(memoryCell - 1, heightMm);
 
         for (var cellNumber = 0; cellNumber < desk.Capabilities.MemoryCells; cellNumber++)
-            Console.WriteLine($"Memory position {cellNumber + 1} {desk.MmFromRaw(await desk.GetOffsetRawAsync() + await desk.GetMemoryPositionRawAsync(cellNumber)),5:0} mm");
-        Console.WriteLine($"Minimum height    {desk.MmFromRaw(await desk.GetOffsetRawAsync()),5:0} mm");
+            Console.WriteLine($"Memory position {cellNumber + 1} {await desk.GetMemoryValueAsync(cellNumber),5:0} mm");
+        Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
 
         return true;
     }
 
-    private bool TryParseMemoryCell(string value, out byte memoryCell)
+    private bool TryParseMemoryCellNumber(string value, out byte memoryCell)
     {
         memoryCell = default;
 

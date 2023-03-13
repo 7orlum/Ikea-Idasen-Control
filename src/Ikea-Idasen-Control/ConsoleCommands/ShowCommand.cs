@@ -35,10 +35,10 @@ internal class ShowCommand : ConsoleCommand
 
         using var desk = await Desk.ConnectAsync(device);
         Console.WriteLine($"Name {await desk.GetNameAsync(),21}");
-        Console.WriteLine($"Current height    {desk.MmFromRaw(await desk.GetOffsetRawAsync() + await desk.GetHeightRawAsync()),5:0} mm");
-        Console.WriteLine($"Minimum height    {desk.MmFromRaw(await desk.GetOffsetRawAsync()),5:0} mm");
+        Console.WriteLine($"Current height    {await desk.GetHeightAsync(),5:0} mm");
+        Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
         for (var cellNumber = 0; cellNumber < desk.Capabilities.MemoryCells; cellNumber++)
-            Console.WriteLine($"Memory position {cellNumber + 1} {desk.MmFromRaw(await desk.GetOffsetRawAsync() + await desk.GetMemoryPositionRawAsync(cellNumber)),5:0} mm");
+            Console.WriteLine($"Memory position {cellNumber + 1} {await desk.GetMemoryValueAsync(cellNumber),5:0} mm");
 
         return true;
     }

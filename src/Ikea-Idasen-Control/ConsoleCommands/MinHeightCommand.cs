@@ -44,12 +44,11 @@ internal class MinHeightCommand : ConsoleCommand
 
         Console.WriteLine($"Writing {heightMm:0} mm as the desk's height in the the lowest position");
 
-        ushort heightRaw = desk.RawFromMmAsync(heightMm - desk.MmFromRaw(await desk.GetOffsetRawAsync()));
-        await desk.SetOffsetRawAsync(heightRaw);
+        await desk.SetMinHeightAsync(heightMm);
 
         for (var cellNumber = 0; cellNumber < desk.Capabilities.MemoryCells; cellNumber++)
-            Console.WriteLine($"Memory position {cellNumber + 1} {desk.MmFromRaw(await desk.GetOffsetRawAsync() + await desk.GetMemoryPositionRawAsync(cellNumber)),5:0} mm");
-        Console.WriteLine($"Minimum height    {desk.MmFromRaw(await desk.GetOffsetRawAsync()),5:0} mm");
+            Console.WriteLine($"Memory position {cellNumber + 1} {desk.GetMemoryValueAsync(cellNumber),5:0} mm");
+        Console.WriteLine($"Minimum height    {desk.GetMinHeightAsync(),5:0} mm");
 
         return true;
     }

@@ -37,11 +37,11 @@ internal class MoveCommand : ConsoleCommand
         using var desk = await Desk.ConnectAsync(device);
 
         float heightMm;
-        if (TryParseMemoryCell(value, out byte memoryCell))
+        if (TryParseMemoryCellNumber(value, out byte memoryCell))
         {
             try
             {
-                heightMm = desk.MmFromRaw(await desk.GetMemoryPositionRawAsync(memoryCell - 1) + await desk.GetOffsetRawAsync());
+                heightMm = await desk.GetMemoryValueAsync(memoryCell - 1);
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -57,15 +57,14 @@ internal class MoveCommand : ConsoleCommand
 
         Console.WriteLine($"Moving the desk to {heightMm:0} mm");
 
-        ushort heightRaw = desk.RawFromMmAsync(heightMm - desk.MmFromRaw(await desk.GetOffsetRawAsync()));
-        await desk.MoveToHeightRawAsync(heightRaw);
+        await desk.SetHeightAsync(heightMm);
 
-        Console.WriteLine($"Current height is {desk.MmFromRaw(await desk.GetOffsetRawAsync() + await desk.GetHeightRawAsync()):0} mm");
+        Console.WriteLine($"Current height is {await desk.GetHeightAsync():0} mm");
 
         return true;
     }
 
-    private bool TryParseMemoryCell(string value, out byte memoryCell)
+    private bool TryParseMemoryCellNumber(string value, out byte memoryCell)
     {
         memoryCell = default;
 
