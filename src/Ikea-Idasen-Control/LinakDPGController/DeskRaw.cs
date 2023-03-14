@@ -1,5 +1,6 @@
 ﻿namespace IkeaIdasenControl.LinakDPGController;
 
+using System;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
@@ -13,18 +14,12 @@ public class DeskRaw : IDisposable
 {
     private BluetoothLEDevice _device = null!;
     private DeskCapabilities _capabilities = null!;
-    private GattDeviceService _nameService = null!;
-    //private GattDeviceService _modelService = null!;
-    private GattDeviceService _controlService = null!;
-    private GattDeviceService _dpgService = null!;
-    private GattDeviceService _heightSpeedSensorService = null!;
-    private GattDeviceService _inputService = null!;
-    private GattCharacteristic _nameCharacteristic = null!;
-    //private GattCharacteristic _modelCharacteristic = null!;
-    private GattCharacteristic _controlCharacteristic = null!;
-    private GattCharacteristic _dpgCharacteristic = null!;
-    private GattCharacteristic _heightSpeedSensorCharacteristic = null!;
-    private GattCharacteristic _inputCharacteristic = null!;
+    private GattCharacteristic _name = null!;
+    //private GattCharacteristic _model = null!;
+    private GattCharacteristic _control = null!;
+    private GattCharacteristic _dpg = null!;
+    private GattCharacteristic _heightSpeedSensor = null!;
+    private GattCharacteristic _input = null!;
 
     public DeskCapabilities Capabilities => _capabilities;
 
@@ -48,12 +43,12 @@ public class DeskRaw : IDisposable
 
     public async Task<string> GetNameAsync()
     {
-        return await ReadStringAsync(_nameCharacteristic);
+        return await ReadStringAsync(_name);
     }
 
     public async Task SetNameAsync(string value)
     {
-        await WriteStringAsync(_nameCharacteristic, value);
+        await WriteStringAsync(_name, value);
     }
 
     public async Task<byte[]> GetUserIdAsync()
@@ -83,7 +78,7 @@ public class DeskRaw : IDisposable
 
     public async Task<ushort> GetHeightAsync()
     {
-        using var dataReader = await ReadDataAsync(_heightSpeedSensorCharacteristic);
+        using var dataReader = await ReadDataAsync(_heightSpeedSensor);
         var height = dataReader.ReadUInt16();
         var speed = dataReader.ReadUInt16();
         return height;
@@ -98,7 +93,7 @@ public class DeskRaw : IDisposable
         var previousHeight = await GetHeightAsync();
         for (var attempts = 0; attempts < stopAfterAttempts; attempts++)
         {
-            await WriteUInt16Async(_inputCharacteristic, targetHeightRaw);
+            await WriteUInt16Async(_input, targetHeightRaw);
 
             var currentHeight = await GetHeightAsync();
             var isMovementDetected = currentHeight != previousHeight;
@@ -132,8 +127,8 @@ public class DeskRaw : IDisposable
     private async Task<DeskCapabilities> GetCapabilities()
     {
         var data = new byte[] { 0x7f, Command.Capabilities, 0x00 };
-        await WriteBytesAsync(_dpgCharacteristic, data);
-        var bytes = await ReadBytesAsync(_dpgCharacteristic);
+        await WriteBytesAsync(_dpg, data);
+        var bytes = await ReadBytesAsync(_dpg);
 
         if (bytes.Length < 4)
             throw new InvalidOperationException();
@@ -161,20 +156,20 @@ public class DeskRaw : IDisposable
 
     private async Task StartMovementAsync()
     {
-        await WriteUInt16Async(_controlCharacteristic, 0xfe);
-        await WriteUInt16Async(_controlCharacteristic, 0xff);
+        await WriteUInt16Async(_control, 0xfe);
+        await WriteUInt16Async(_control, 0xff);
     }
 
     private async Task FinishMovementAsync()
     {
-        await WriteUInt16Async(_controlCharacteristic, 0xff);
-        await WriteUInt16Async(_inputCharacteristic, 0x8001);
+        await WriteUInt16Async(_control, 0xff);
+        await WriteUInt16Async(_input, 0x8001);
     }
 
     private async Task<byte[]> QueryBytesAsync(Command command)
     {
-        await WriteBytesAsync(_dpgCharacteristic, new byte[] { 0x7f, command, 0x00 });
-        return await ReadBytesAsync(_dpgCharacteristic);
+        await WriteBytesAsync(_dpg, new byte[] { 0x7f, command, 0x00 });
+        return await ReadBytesAsync(_dpg);
     }
 
     private async Task<ushort> QueryUInt16Async(Command command)
@@ -193,8 +188,8 @@ public class DeskRaw : IDisposable
     private async Task<byte[]> QueryBytesAsync(Command command, byte[] value)
     {
         var data = new byte[] { 0x7f, command, 0x80, 0x01 }.Concat(value).ToArray();
-        await WriteBytesAsync(_dpgCharacteristic, data);
-        return await ReadBytesAsync(_dpgCharacteristic);
+        await WriteBytesAsync(_dpg, data);
+        return await ReadBytesAsync(_dpg);
     }
 
     private async Task<byte[]> QueryBytesAsync(Command command, ushort value)
@@ -207,30 +202,41 @@ public class DeskRaw : IDisposable
 
     private async Task ConnectAsync()
     {
-        _nameService = await GetServiceAsync(ServiceUUID.Name);
-        //_modelService = await GetServiceAsync(ServiceUUID.Model);
-        _controlService = await GetServiceAsync(ServiceUUID.Control);
-        _dpgService = await GetServiceAsync(ServiceUUID.DPG);
-        _heightSpeedSensorService = await GetServiceAsync(ServiceUUID.HeightSpeedSensor);
-        _inputService = await GetServiceAsync(ServiceUUID.Input);
-
-        _nameCharacteristic = await GetCharacteristicAsync(_nameService, CharacteristicUUID.Name);
-        //_modelCharacteristic = await GetCharacteristicAsync(_modelService, CharacteristicUUID.Model);
-        _controlCharacteristic = await GetCharacteristicAsync(_controlService, CharacteristicUUID.Control);
-        _dpgCharacteristic = await GetCharacteristicAsync(_dpgService, CharacteristicUUID.DPG);
-        _heightSpeedSensorCharacteristic = await GetCharacteristicAsync(_heightSpeedSensorService, CharacteristicUUID.HeightSpeedSensor);
-        _inputCharacteristic = await GetCharacteristicAsync(_inputService, CharacteristicUUID.Input);
+        _name = await GetCharacteristicAsync(ServiceUUID.Name, CharacteristicUUID.Name);
+        //_model = await GetCharacteristicAsync(ServiceUUID.Model, CharacteristicUUID.Model);
+        _control = await GetCharacteristicAsync(ServiceUUID.Control, CharacteristicUUID.Control);
+        _dpg = await GetCharacteristicAsync(ServiceUUID.DPG, CharacteristicUUID.DPG);
+        _heightSpeedSensor = await GetCharacteristicAsync(ServiceUUID.HeightSpeedSensor, CharacteristicUUID.HeightSpeedSensor);
+        _input = await GetCharacteristicAsync(ServiceUUID.Input, CharacteristicUUID.Input);
     }
 
     private void Disconnect()
     {
         _device?.Dispose();
-        _nameService?.Dispose();
-        //_modelService?.Dispose();
-        _controlService?.Dispose();
-        _dpgService?.Dispose();
-        _heightSpeedSensorService?.Dispose();
-        _inputService?.Dispose();
+        _name?.Service?.Dispose();
+        //_model?.Service?.Dispose();
+        _control?.Service?.Dispose();
+        _dpg?.Service?.Dispose();
+        _heightSpeedSensor?.Service?.Dispose();
+        _input?.Service?.Dispose();
+    }
+
+    private async Task<GattCharacteristic> GetCharacteristicAsync(Guid serviceUUID, Guid characteristicUUID)
+    {
+        GattDeviceService service;
+        service = await GetServiceAsync(serviceUUID);
+        try
+        {
+            var result = await service.GetCharacteristicsForUuidAsync(characteristicUUID);
+            if (GattCommunicationStatus.Success != result.Status)
+                throw new ApplicationException(result.Status.ToString());
+            return result.Characteristics[0];
+        }
+        catch
+        {
+            service.Dispose();
+            throw;
+        }
     }
 
     private async Task<GattDeviceService> GetServiceAsync(Guid UUID)
@@ -239,14 +245,6 @@ public class DeskRaw : IDisposable
         if (GattCommunicationStatus.Success != result.Status)
             throw new ApplicationException(result.Status.ToString());
         return result.Services[0];
-    }
-
-    private async Task<GattCharacteristic> GetCharacteristicAsync(GattDeviceService service, Guid UUID)
-    {
-        var result = await service.GetCharacteristicsForUuidAsync(UUID);
-        if (GattCommunicationStatus.Success != result.Status)
-            throw new ApplicationException(result.Status.ToString());
-        return result.Characteristics[0];
     }
 
     private async Task<string> ReadStringAsync(GattCharacteristic characteristic)
