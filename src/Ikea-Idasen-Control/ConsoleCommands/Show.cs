@@ -20,7 +20,7 @@ internal class Show : DeskConsoleCommand
         Console.WriteLine($"Name {await desk.GetNameAsync(),21}");
         Console.WriteLine($"Current height    {await desk.GetHeightAsync(),5:0} mm");
         Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
-        for (var memoryCellNumber = 1; memoryCellNumber <= desk.Capabilities.NumberOfMemoryCells; memoryCellNumber++)
+        for (var memoryCellNumber = 1; memoryCellNumber <= desk.NumberOfMemoryCells; memoryCellNumber++)
             Console.WriteLine($"Memory position {memoryCellNumber} {await desk.GetMemoryValueAsync(memoryCellNumber),5:0} mm");
     }
 }

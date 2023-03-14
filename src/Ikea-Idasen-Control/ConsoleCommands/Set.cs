@@ -30,7 +30,7 @@ internal class Set : DeskConsoleCommand
 
         Console.WriteLine($"Writing {height:0} mm into memory cell {memoryCellNumber}");
         await desk.SetMemoryValueAsync(memoryCellNumber, height);
-        for (memoryCellNumber = 1; memoryCellNumber <= desk.Capabilities.NumberOfMemoryCells; memoryCellNumber++)
+        for (memoryCellNumber = 1; memoryCellNumber <= desk.NumberOfMemoryCells; memoryCellNumber++)
             Console.WriteLine($"Memory position {memoryCellNumber} {await desk.GetMemoryValueAsync(memoryCellNumber),5:0} mm");
         Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
     }

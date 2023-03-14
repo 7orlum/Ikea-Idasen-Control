@@ -11,7 +11,7 @@ public class MyDesk : IDisposable
 {
     private Desk _desk = null!;
 
-    public DeskCapabilities Capabilities => _desk.Capabilities;
+    public int NumberOfMemoryCells => _desk.Capabilities.NumberOfMemoryCells;
 
     public static async Task<MyDesk> ConnectAsync(PhysicalAddress bluetoothAddress)
     {
