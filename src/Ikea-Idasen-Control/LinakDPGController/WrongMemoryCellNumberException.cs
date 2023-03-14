@@ -1,4 +1,6 @@
-﻿internal class WrongMemoryCellNumberException : Exception
+﻿namespace IkeaIdasenControl.LinakDPGController;
+
+internal class WrongMemoryCellNumberException : Exception
 {
     public WrongMemoryCellNumberException() 
     { }

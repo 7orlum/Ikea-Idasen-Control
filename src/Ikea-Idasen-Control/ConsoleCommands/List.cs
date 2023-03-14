@@ -1,9 +1,11 @@
-﻿using ManyConsole;
+﻿namespace IkeaIdasenControl.ConsoleCommands;
+
+using ManyConsole;
 using Windows.Devices.Enumeration;
 
-internal class ListCommand : ConsoleCommand
+internal class List : ConsoleCommand
 {
-    public ListCommand()
+    public List()
     {
         IsCommand("List", "shows the list of Idasen desks");
         HasLongDescription("The desks must already be paired to the computer to appear in the list.");

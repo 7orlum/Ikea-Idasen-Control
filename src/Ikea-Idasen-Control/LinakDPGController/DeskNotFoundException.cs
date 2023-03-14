@@ -1,4 +1,6 @@
-﻿internal class DeskNotFoundException : Exception
+﻿namespace IkeaIdasenControl.LinakDPGController;
+
+internal class DeskNotFoundException : Exception
 {
     public DeskNotFoundException() 
     { }

@@ -1,6 +1,8 @@
-﻿internal class MinHeightCommand : DeskConsoleCommand
+﻿namespace IkeaIdasenControl.ConsoleCommands;
+
+internal class MinHeight : DeskConsoleCommand
 {
-    public MinHeightCommand() : base()
+    public MinHeight() : base()
     {
         IsCommand("MinHeight", "defines the Idasen desk height in the lowest position");
         HasLongDescription("The desks must already be paired to the computer.");

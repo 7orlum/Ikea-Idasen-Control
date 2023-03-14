@@ -1,6 +1,8 @@
-﻿internal class MoveCommand : DeskConsoleCommand
+﻿namespace IkeaIdasenControl.ConsoleCommands;
+
+internal class Move : DeskConsoleCommand
 {
-    public MoveCommand() : base()
+    public Move() : base()
     {
         IsCommand("Move", "moves the Idasen desk to the specified height");
         HasLongDescription("The desks must already be paired to the computer.");

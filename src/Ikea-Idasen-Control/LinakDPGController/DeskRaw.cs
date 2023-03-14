@@ -1,4 +1,7 @@
-﻿using System.Net.NetworkInformation;
+﻿namespace IkeaIdasenControl.LinakDPGController;
+
+using Command = Constant.Command;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
@@ -56,25 +59,25 @@ public class DeskRaw : IDisposable
 
     public async Task<byte[]> GetUserIdAsync()
     {
-        var result = await QueryBytesAsync(DPGCommand.UserID);
+        var result = await QueryBytesAsync(Command.UserID);
         return result[3..];
     }
 
     public async Task SetUserIdAsync(byte[] value)
     {
-        var result = await QueryBytesAsync(DPGCommand.UserID, value);
+        var result = await QueryBytesAsync(Command.UserID, value);
         if (result[0] != 1 && result[1] != 0)
             throw new InvalidOperationException();
     }
 
     public async Task<ushort> GetOffsetAsync()
     {
-        return await QueryUInt16Async(DPGCommand.DeskOffset);
+        return await QueryUInt16Async(Command.DeskOffset);
     }
 
     public async Task SetOffsetAsync(ushort value)
     {
-        var result = await QueryBytesAsync(DPGCommand.DeskOffset, value);
+        var result = await QueryBytesAsync(Command.DeskOffset, value);
         if (result[0] != 1 && result[1] != 0)
             throw new InvalidOperationException();
     }
@@ -129,7 +132,7 @@ public class DeskRaw : IDisposable
 
     private async Task<DeskCapabilities> GetCapabilities()
     {
-        var data = new byte[] { 0x7f, (byte)DPGCommand.Capabilities, 0x00 };
+        var data = new byte[] { 0x7f, (byte)Command.Capabilities, 0x00 };
         await WriteBytesAsync(_dpgCharacteristic, data);
         var bytes = await ReadBytesAsync(_dpgCharacteristic);
 
@@ -146,13 +149,13 @@ public class DeskRaw : IDisposable
         );
     }
 
-    private DPGCommand GetMemoryPositionCommand(int cellNumber) => cellNumber switch
+    private Command GetMemoryPositionCommand(int cellNumber) => cellNumber switch
     {
         <= 0 => throw new WrongMemoryCellNumberException("Invalid memory cell number. Must be greater that zero"),
-        1 => DPGCommand.MemoryPosition1,
-        2 => DPGCommand.MemoryPosition2,
-        3 => DPGCommand.MemoryPosition3,
-        4 => DPGCommand.MemoryPosition4,
+        1 => Command.MemoryPosition1,
+        2 => Command.MemoryPosition2,
+        3 => Command.MemoryPosition3,
+        4 => Command.MemoryPosition4,
         _ => throw new WrongMemoryCellNumberException(
             $"Invalid memory cell number. Check {nameof(DeskRaw)}.{nameof(Capabilities)}.{nameof(Capabilities.NumberOfMemoryCells)} to get the total number of memory cells. Memory cells numbering starts with one")
     };
@@ -169,13 +172,13 @@ public class DeskRaw : IDisposable
         await WriteUInt16Async(_inputCharacteristic, 0x8001);
     }
 
-    private async Task<byte[]> QueryBytesAsync(DPGCommand command)
+    private async Task<byte[]> QueryBytesAsync(Command command)
     {
         await WriteBytesAsync(_dpgCharacteristic, new byte[] { 0x7f, (byte)command, 0x00 });
         return await ReadBytesAsync(_dpgCharacteristic);
     }
 
-    private async Task<ushort> QueryUInt16Async(DPGCommand command)
+    private async Task<ushort> QueryUInt16Async(Command command)
     {
         var bytes = await QueryBytesAsync(command);
 
@@ -188,14 +191,14 @@ public class DeskRaw : IDisposable
         return dataReader.ReadUInt16();
     }
 
-    private async Task<byte[]> QueryBytesAsync(DPGCommand command, byte[] value)
+    private async Task<byte[]> QueryBytesAsync(Command command, byte[] value)
     {
         var data = new byte[] { 0x7f, (byte)command, 0x80, 0x01 }.Concat(value).ToArray();
         await WriteBytesAsync(_dpgCharacteristic, data);
         return await ReadBytesAsync(_dpgCharacteristic);
     }
 
-    private async Task<byte[]> QueryBytesAsync(DPGCommand command, ushort value)
+    private async Task<byte[]> QueryBytesAsync(Command command, ushort value)
     {
         var data = BitConverter.GetBytes((ushort)value);
         if (!BitConverter.IsLittleEndian)
@@ -205,19 +208,19 @@ public class DeskRaw : IDisposable
 
     private async Task ConnectAsync()
     {
-        _nameService = await GetServiceAsync(BLEConstants.NameServiceUUID);
-        //_modelService = await GetServiceAsync(BLEConstants.ModelServiceUUID);
-        _controlService = await GetServiceAsync(BLEConstants.ControlServiceUUID);
-        _dpgService = await GetServiceAsync(BLEConstants.DPGServiceUUID);
-        _heightSpeedSensorService = await GetServiceAsync(BLEConstants.HeightSpeedSensorServiceUUID);
-        _inputService = await GetServiceAsync(BLEConstants.InputServiceUUID);
+        _nameService = await GetServiceAsync(Constant.NameServiceUUID);
+        //_modelService = await GetServiceAsync(Constant.ModelServiceUUID);
+        _controlService = await GetServiceAsync(Constant.ControlServiceUUID);
+        _dpgService = await GetServiceAsync(Constant.DPGServiceUUID);
+        _heightSpeedSensorService = await GetServiceAsync(Constant.HeightSpeedSensorServiceUUID);
+        _inputService = await GetServiceAsync(Constant.InputServiceUUID);
 
-        _nameCharacteristic = await GetCharacteristicAsync(_nameService, BLEConstants.NameCharacteristicUUID);
-        //_modelCharacteristic = await GetCharacteristicAsync(_modelService, BLEConstants.ModelCharacteristicUUID);
-        _controlCharacteristic = await GetCharacteristicAsync(_controlService, BLEConstants.ControlCharacteristicUUID);
-        _dpgCharacteristic = await GetCharacteristicAsync(_dpgService, BLEConstants.DPGCharacteristicUUID);
-        _heightSpeedSensorCharacteristic = await GetCharacteristicAsync(_heightSpeedSensorService, BLEConstants.HeightSpeedSensorCharacteristicUUID);
-        _inputCharacteristic = await GetCharacteristicAsync(_inputService, BLEConstants.InputCharacteristicUUID);
+        _nameCharacteristic = await GetCharacteristicAsync(_nameService, Constant.NameCharacteristicUUID);
+        //_modelCharacteristic = await GetCharacteristicAsync(_modelService, Constant.ModelCharacteristicUUID);
+        _controlCharacteristic = await GetCharacteristicAsync(_controlService, Constant.ControlCharacteristicUUID);
+        _dpgCharacteristic = await GetCharacteristicAsync(_dpgService, Constant.DPGCharacteristicUUID);
+        _heightSpeedSensorCharacteristic = await GetCharacteristicAsync(_heightSpeedSensorService, Constant.HeightSpeedSensorCharacteristicUUID);
+        _inputCharacteristic = await GetCharacteristicAsync(_inputService, Constant.InputCharacteristicUUID);
     }
 
     private void Disconnect()

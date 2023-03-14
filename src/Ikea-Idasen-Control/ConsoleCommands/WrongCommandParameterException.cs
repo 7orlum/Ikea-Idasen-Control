@@ -1,4 +1,6 @@
-﻿internal class WrongCommandParameterException : Exception
+﻿namespace IkeaIdasenControl.ConsoleCommands;
+
+internal class WrongCommandParameterException : Exception
 {
     public WrongCommandParameterException() 
     { }

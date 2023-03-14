@@ -1,6 +1,8 @@
-﻿internal class ShowCommand : DeskConsoleCommand
+﻿namespace IkeaIdasenControl.ConsoleCommands;
+
+internal class Show : DeskConsoleCommand
 {
-    public ShowCommand() : base()
+    public Show() : base()
     {
         IsCommand("Show", "shows the current state of the Idasen desk");
         HasLongDescription("The desks must already be paired to the computer.");

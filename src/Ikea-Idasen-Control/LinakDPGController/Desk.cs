@@ -1,4 +1,6 @@
-﻿using System.Net.NetworkInformation;
+﻿namespace IkeaIdasenControl.LinakDPGController;
+
+using System.Net.NetworkInformation;
 
 ///<summary>
 ///Counts the height from the floor level in millimeters, 

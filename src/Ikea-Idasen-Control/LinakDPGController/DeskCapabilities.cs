@@ -1,4 +1,6 @@
-﻿public record DeskCapabilities (
+﻿namespace IkeaIdasenControl.LinakDPGController;
+
+public record DeskCapabilities (
     int NumberOfMemoryCells, 
     bool AutoUp,
     bool AutoDown,

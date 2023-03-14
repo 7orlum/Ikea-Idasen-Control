@@ -1,4 +1,6 @@
-﻿using ManyConsole;
+﻿namespace IkeaIdasenControl;
+
+using ManyConsole;
 
 public class Program
 {

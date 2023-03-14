@@ -1,4 +1,7 @@
-﻿using ManyConsole;
+﻿namespace IkeaIdasenControl.ConsoleCommands;
+
+using IkeaIdasenControl.LinakDPGController;
+using ManyConsole;
 using System.Net.NetworkInformation;
 
 public abstract class DeskConsoleCommand : ConsoleCommand

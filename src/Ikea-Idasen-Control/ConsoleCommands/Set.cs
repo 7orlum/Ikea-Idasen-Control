@@ -1,6 +1,8 @@
-﻿internal class SetCommand : DeskConsoleCommand
+﻿namespace IkeaIdasenControl.ConsoleCommands;
+
+internal class Set : DeskConsoleCommand
 {
-    public SetCommand() : base()
+    public Set() : base()
     {
         IsCommand("Set", "sets the Idasen desk memory position to the specified height");
         HasLongDescription("The desks must already be paired to the computer.");
