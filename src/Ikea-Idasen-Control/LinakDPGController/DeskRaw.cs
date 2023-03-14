@@ -1,6 +1,5 @@
 ﻿namespace IkeaIdasenControl.LinakDPGController;
 
-using Command = Constant.Command;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
@@ -132,7 +131,7 @@ public class DeskRaw : IDisposable
 
     private async Task<DeskCapabilities> GetCapabilities()
     {
-        var data = new byte[] { 0x7f, (byte)Command.Capabilities, 0x00 };
+        var data = new byte[] { 0x7f, Command.Capabilities, 0x00 };
         await WriteBytesAsync(_dpgCharacteristic, data);
         var bytes = await ReadBytesAsync(_dpgCharacteristic);
 
@@ -140,7 +139,7 @@ public class DeskRaw : IDisposable
             throw new InvalidOperationException();
 
         return new DeskCapabilities(
-            NumberOfMemoryCells: (byte)(bytes[2] & 0b0000_0111),
+            NumberOfMemoryCells: (bytes[2] & 0b0000_0111),
             AutoUp: (bytes[2] & 0b0000_1000) != 0,
             AutoDown: (bytes[2] & 0b0001_0000) != 0,
             BleAllowed: (bytes[2] & 0b0010_0000) != 0,
@@ -174,7 +173,7 @@ public class DeskRaw : IDisposable
 
     private async Task<byte[]> QueryBytesAsync(Command command)
     {
-        await WriteBytesAsync(_dpgCharacteristic, new byte[] { 0x7f, (byte)command, 0x00 });
+        await WriteBytesAsync(_dpgCharacteristic, new byte[] { 0x7f, command, 0x00 });
         return await ReadBytesAsync(_dpgCharacteristic);
     }
 
@@ -193,14 +192,14 @@ public class DeskRaw : IDisposable
 
     private async Task<byte[]> QueryBytesAsync(Command command, byte[] value)
     {
-        var data = new byte[] { 0x7f, (byte)command, 0x80, 0x01 }.Concat(value).ToArray();
+        var data = new byte[] { 0x7f, command, 0x80, 0x01 }.Concat(value).ToArray();
         await WriteBytesAsync(_dpgCharacteristic, data);
         return await ReadBytesAsync(_dpgCharacteristic);
     }
 
     private async Task<byte[]> QueryBytesAsync(Command command, ushort value)
     {
-        var data = BitConverter.GetBytes((ushort)value);
+        var data = BitConverter.GetBytes(value);
         if (!BitConverter.IsLittleEndian)
             Array.Reverse(data);
         return await QueryBytesAsync(command, data);
@@ -208,19 +207,19 @@ public class DeskRaw : IDisposable
 
     private async Task ConnectAsync()
     {
-        _nameService = await GetServiceAsync(Constant.NameServiceUUID);
-        //_modelService = await GetServiceAsync(Constant.ModelServiceUUID);
-        _controlService = await GetServiceAsync(Constant.ControlServiceUUID);
-        _dpgService = await GetServiceAsync(Constant.DPGServiceUUID);
-        _heightSpeedSensorService = await GetServiceAsync(Constant.HeightSpeedSensorServiceUUID);
-        _inputService = await GetServiceAsync(Constant.InputServiceUUID);
+        _nameService = await GetServiceAsync(ServiceUUID.Name);
+        //_modelService = await GetServiceAsync(ServiceUUID.Model);
+        _controlService = await GetServiceAsync(ServiceUUID.Control);
+        _dpgService = await GetServiceAsync(ServiceUUID.DPG);
+        _heightSpeedSensorService = await GetServiceAsync(ServiceUUID.HeightSpeedSensor);
+        _inputService = await GetServiceAsync(ServiceUUID.Input);
 
-        _nameCharacteristic = await GetCharacteristicAsync(_nameService, Constant.NameCharacteristicUUID);
-        //_modelCharacteristic = await GetCharacteristicAsync(_modelService, Constant.ModelCharacteristicUUID);
-        _controlCharacteristic = await GetCharacteristicAsync(_controlService, Constant.ControlCharacteristicUUID);
-        _dpgCharacteristic = await GetCharacteristicAsync(_dpgService, Constant.DPGCharacteristicUUID);
-        _heightSpeedSensorCharacteristic = await GetCharacteristicAsync(_heightSpeedSensorService, Constant.HeightSpeedSensorCharacteristicUUID);
-        _inputCharacteristic = await GetCharacteristicAsync(_inputService, Constant.InputCharacteristicUUID);
+        _nameCharacteristic = await GetCharacteristicAsync(_nameService, CharacteristicUUID.Name);
+        //_modelCharacteristic = await GetCharacteristicAsync(_modelService, CharacteristicUUID.Model);
+        _controlCharacteristic = await GetCharacteristicAsync(_controlService, CharacteristicUUID.Control);
+        _dpgCharacteristic = await GetCharacteristicAsync(_dpgService, CharacteristicUUID.DPG);
+        _heightSpeedSensorCharacteristic = await GetCharacteristicAsync(_heightSpeedSensorService, CharacteristicUUID.HeightSpeedSensor);
+        _inputCharacteristic = await GetCharacteristicAsync(_inputService, CharacteristicUUID.Input);
     }
 
     private void Disconnect()
@@ -234,17 +233,17 @@ public class DeskRaw : IDisposable
         _inputService?.Dispose();
     }
 
-    private async Task<GattDeviceService> GetServiceAsync(string serviceUUID)
+    private async Task<GattDeviceService> GetServiceAsync(Guid UUID)
     {
-        var result = await _device.GetGattServicesForUuidAsync(Guid.Parse(serviceUUID));
+        var result = await _device.GetGattServicesForUuidAsync(UUID);
         if (GattCommunicationStatus.Success != result.Status)
             throw new ApplicationException(result.Status.ToString());
         return result.Services[0];
     }
 
-    private async Task<GattCharacteristic> GetCharacteristicAsync(GattDeviceService service, string characteristicUUID)
+    private async Task<GattCharacteristic> GetCharacteristicAsync(GattDeviceService service, Guid UUID)
     {
-        var result = await service.GetCharacteristicsForUuidAsync(Guid.Parse(characteristicUUID));
+        var result = await service.GetCharacteristicsForUuidAsync(UUID);
         if (GattCommunicationStatus.Success != result.Status)
             throw new ApplicationException(result.Status.ToString());
         return result.Characteristics[0];
