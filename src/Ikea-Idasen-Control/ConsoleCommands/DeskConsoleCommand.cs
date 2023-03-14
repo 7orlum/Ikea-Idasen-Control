@@ -1,5 +1,6 @@
 ﻿namespace IkeaIdasenControl.ConsoleCommands;
 
+using IkeaIdasenControl;
 using IkeaIdasenControl.LinakDPGController;
 using ManyConsole;
 using System.Net.NetworkInformation;
@@ -13,12 +14,12 @@ public abstract class DeskConsoleCommand : ConsoleCommand
         HasRequiredOption("a|address=", "address of the desk like ec:02:09:df:8e:d8. You can get your desk address calling the program with the parameter List", address => Address = address ?? string.Empty);
     }
 
-    protected async Task<Desk> GetDeskAsync()
+    protected async Task<MyDesk> GetDeskAsync()
     {
         if (!PhysicalAddress.TryParse(Address, out var physicalAddress))
             throw new WrongCommandParameterException($"Address {Address} is wrong. It must be like 'ec:02:09:df:8e:d8'. You can get your desk address calling the program with the parameter List");
 
-        return await Desk.ConnectAsync(physicalAddress);
+        return await MyDesk.ConnectAsync(physicalAddress);
     }
 
     protected bool TryParseHeight(string value, out float height)
