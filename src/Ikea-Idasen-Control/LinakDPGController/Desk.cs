@@ -229,7 +229,7 @@ public class Desk : IDisposable
         {
             var result = await service.GetCharacteristicsForUuidAsync(characteristicUUID);
             if (GattCommunicationStatus.Success != result.Status)
-                throw new ApplicationException(result.Status.ToString());
+                throw new GattCommunicationException(result.Status.ToString());
             return result.Characteristics[0];
         }
         catch
@@ -243,7 +243,7 @@ public class Desk : IDisposable
     {
         var result = await _device.GetGattServicesForUuidAsync(UUID);
         if (GattCommunicationStatus.Success != result.Status)
-            throw new ApplicationException(result.Status.ToString());
+            throw new GattCommunicationException(result.Status.ToString());
         return result.Services[0];
     }
 
@@ -252,7 +252,7 @@ public class Desk : IDisposable
         var result = await characteristic.ReadValueAsync(BluetoothCacheMode.Uncached);
 
         if (GattCommunicationStatus.Success != result.Status)
-            throw new ApplicationException(result.Status.ToString());
+            throw new GattCommunicationException(result.Status.ToString());
 
         if (result.Value.Length == 0)
             return String.Empty;
@@ -267,7 +267,7 @@ public class Desk : IDisposable
         var result = await characteristic.ReadValueAsync(BluetoothCacheMode.Uncached);
 
         if (GattCommunicationStatus.Success != result.Status)
-            throw new ApplicationException(result.Status.ToString());
+            throw new GattCommunicationException(result.Status.ToString());
 
         if (result.Value.Length == 0)
             return default;
@@ -282,7 +282,7 @@ public class Desk : IDisposable
         var result = await characteristic.ReadValueAsync(BluetoothCacheMode.Uncached);
 
         if (GattCommunicationStatus.Success != result.Status)
-            throw new ApplicationException(result.Status.ToString());
+            throw new GattCommunicationException(result.Status.ToString());
 
         if (result.Value.Length == 0)
             return Array.Empty<byte>();
@@ -299,7 +299,7 @@ public class Desk : IDisposable
         var result = await characteristic.ReadValueAsync(BluetoothCacheMode.Uncached);
 
         if (GattCommunicationStatus.Success != result.Status)
-            throw new ApplicationException(result.Status.ToString());
+            throw new GattCommunicationException(result.Status.ToString());
 
         var dataReader = DataReader.FromBuffer(result.Value);
         dataReader.ByteOrder = ByteOrder.LittleEndian;
@@ -311,7 +311,7 @@ public class Desk : IDisposable
         var bytes = System.Text.Encoding.ASCII.GetBytes(value);
         var result = await characteristic.WriteValueAsync(bytes.AsBuffer());
         if (GattCommunicationStatus.Success != result)
-            throw new ApplicationException(result.ToString());
+            throw new GattCommunicationException(result.ToString());
     }
 
     private async Task WriteUInt16Async(GattCharacteristic characteristic, ushort value)
@@ -322,13 +322,13 @@ public class Desk : IDisposable
 
         var result = await characteristic.WriteValueAsync(bytes.AsBuffer());
         if (GattCommunicationStatus.Success != result)
-            throw new ApplicationException(result.ToString());
+            throw new GattCommunicationException(result.ToString());
     }
 
     private async Task WriteBytesAsync(GattCharacteristic characteristic, byte[] value)
     {
         var result = await characteristic.WriteValueAsync(value.AsBuffer());
         if (GattCommunicationStatus.Success != result)
-            throw new ApplicationException(result.ToString());
+            throw new GattCommunicationException(result.ToString());
     }
 }

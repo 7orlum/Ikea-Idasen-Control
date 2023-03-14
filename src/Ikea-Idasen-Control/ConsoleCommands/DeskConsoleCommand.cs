@@ -54,6 +54,7 @@ public abstract class DeskConsoleCommand : ConsoleCommand
             foreach(var e in ex.Flatten().InnerExceptions)
             {
                 if (e is DeskNotFoundException ||
+                    e is GattCommunicationException ||
                     e is WrongMemoryCellNumberException ||
                     e is WrongCommandParameterException)
                 {
