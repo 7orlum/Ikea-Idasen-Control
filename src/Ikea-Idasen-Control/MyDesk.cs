@@ -29,7 +29,14 @@ public class MyDesk : IDisposable
     public async Task SetMinHeightAsync(float value) => await _desk.SetOffsetAsync(RawFromMm(value));
     public async Task<float> GetHeightAsync() => MmFromRaw(await _desk.GetOffsetAsync() + await _desk.GetHeightAsync());
     public async Task SetHeightAsync(float value) => await _desk.SetHeightAsync(RawFromMm(value - await GetMinHeightAsync()));
-    public async Task<float> GetMemoryValueAsync(int cellNumber) => MmFromRaw(await _desk.GetOffsetAsync() + await _desk.GetMemoryValueAsync(cellNumber));
+    public async Task<float?> GetMemoryValueAsync(int cellNumber)
+    {
+        var value = await _desk.GetMemoryValueAsync(cellNumber);
+        if (value == null)
+            return null;
+        else
+            return MmFromRaw(await _desk.GetOffsetAsync() + value.Value);
+    }
     public async Task SetMemoryValueAsync(int cellNumber, float value) => await _desk.SetMemoryValueAsync(cellNumber, RawFromMm(value - await GetMinHeightAsync()));
     public void Dispose() => _desk.Dispose();
 

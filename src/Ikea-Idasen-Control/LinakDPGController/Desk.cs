@@ -1,6 +1,8 @@
 ﻿namespace IkeaIdasenControl.LinakDPGController;
 
 using System;
+using System.Buffers.Binary;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
@@ -33,7 +35,6 @@ public class Desk : IDisposable
         };
         
         await result.ConnectAsync();
-        await result.SetUserIdAsync(await result.GetUserIdAsync()); //SetMemoryPositionRawAsync doesn't work whithout it!
         result._capabilities = await result.GetCapabilities();
         
         return result;
@@ -53,27 +54,36 @@ public class Desk : IDisposable
 
     public async Task<byte[]> GetUserIdAsync()
     {
-        var result = await QueryBytesAsync(Command.UserID);
-        return result[3..];
+        return (await QueryDPGAsync(Command.UserID))[1..];
     }
 
     public async Task SetUserIdAsync(byte[] value)
     {
-        var result = await QueryBytesAsync(Command.UserID, value);
-        if (result[0] != 1 && result[1] != 0)
-            throw new InvalidOperationException();
+        _ = await QueryDPGAsync(Command.UserID, value);
     }
 
     public async Task<ushort> GetOffsetAsync()
     {
-        return await QueryUInt16Async(Command.DeskOffset);
+        var responce = await QueryDPGAsync(Command.DeskOffset);
+
+        //responce format is invalid
+        if (responce.Length < 1)
+            throw new InvalidDataException();
+
+        //offset value is not set
+        if (responce[0] == 0)
+            return 0;
+
+        //responce format is invalid
+        if (responce.Length < 3)
+            throw new InvalidDataException();
+
+        return ReadUInt16LittleEndian(responce, 1);
     }
 
     public async Task SetOffsetAsync(ushort value)
     {
-        var result = await QueryBytesAsync(Command.DeskOffset, value);
-        if (result[0] != 1 && result[1] != 0)
-            throw new InvalidOperationException();
+        _ = await QueryDPGAsync(Command.DeskOffset, UInt16AsLittleEndian(value));
     }
 
     public async Task<ushort> GetHeightAsync()
@@ -106,14 +116,28 @@ public class Desk : IDisposable
         await FinishMovementAsync();
     }
 
-    public async Task<ushort> GetMemoryValueAsync(int cellNumber)
+    public async Task<ushort?> GetMemoryValueAsync(int cellNumber)
     {
-        return await QueryUInt16Async(GetMemoryPositionCommand(cellNumber));
+        var responce = await QueryDPGAsync(GetMemoryPositionCommand(cellNumber));
+
+        //responce format is invalid
+        if (responce.Length < 1)
+            throw new InvalidDataException();
+
+        //memory value is not set
+        if (responce[0] == 0)
+            return null;
+
+        //responce format is invalid
+        if (responce.Length < 3)
+            throw new InvalidDataException();
+
+        return ReadUInt16LittleEndian(responce, 1);
     }
 
     public async Task SetMemoryValueAsync(int cellNumber, ushort value)
     {
-        await QueryBytesAsync(GetMemoryPositionCommand(cellNumber), value);
+        _ = await QueryDPGAsync(GetMemoryPositionCommand(cellNumber), UInt16AsLittleEndian(value).ToArray());
     }
 
     public void Dispose()
@@ -121,25 +145,42 @@ public class Desk : IDisposable
         Disconnect();
     }
 
-    private static ulong PhysicalAddressToUInt64(PhysicalAddress address) =>
-        BitConverter.ToUInt64(address.GetAddressBytes().Reverse().Concat(new byte[] { 0, 0 }).ToArray());
+    private async Task ConnectAsync()
+    {
+        _name = await GetCharacteristicAsync(ServiceUUID.Name, CharacteristicUUID.Name);
+        //_model = await GetCharacteristicAsync(ServiceUUID.Model, CharacteristicUUID.Model);
+        _control = await GetCharacteristicAsync(ServiceUUID.Control, CharacteristicUUID.Control);
+        _dpg = await GetCharacteristicAsync(ServiceUUID.DPG, CharacteristicUUID.DPG);
+        _heightSpeedSensor = await GetCharacteristicAsync(ServiceUUID.HeightSpeedSensor, CharacteristicUUID.HeightSpeedSensor);
+        _input = await GetCharacteristicAsync(ServiceUUID.Input, CharacteristicUUID.Input);
+    }
+
+    private void Disconnect()
+    {
+        _device?.Dispose();
+        _name?.Service?.Dispose();
+        //_model?.Service?.Dispose();
+        _control?.Service?.Dispose();
+        _dpg?.Service?.Dispose();
+        _heightSpeedSensor?.Service?.Dispose();
+        _input?.Service?.Dispose();
+    }
 
     private async Task<DeskCapabilities> GetCapabilities()
     {
-        var data = new byte[] { 0x7f, Command.Capabilities, 0x00 };
-        await WriteBytesAsync(_dpg, data);
-        var bytes = await ReadBytesAsync(_dpg);
+        var responce = await QueryDPGAsync(Command.Capabilities);
 
-        if (bytes.Length < 4)
-            throw new InvalidOperationException();
+        //responce format is invalid
+        if (responce.Length < 1)
+            throw new InvalidDataException();
 
         return new DeskCapabilities(
-            NumberOfMemoryCells: (bytes[2] & 0b0000_0111),
-            AutoUp: (bytes[2] & 0b0000_1000) != 0,
-            AutoDown: (bytes[2] & 0b0001_0000) != 0,
-            BleAllowed: (bytes[2] & 0b0010_0000) != 0,
-            HasDisplay: (bytes[2] & 0b0100_0000) != 0,
-            HasLight: (bytes[2] & 0b1000_0000) != 0
+            NumberOfMemoryCells: (responce[0] & 0b0000_0111),
+            AutoUp: (responce[0] & 0b0000_1000) != 0,
+            AutoDown: (responce[0] & 0b0001_0000) != 0,
+            BleAllowed: (responce[0] & 0b0010_0000) != 0,
+            HasDisplay: (responce[0] & 0b0100_0000) != 0,
+            HasLight: (responce[0] & 0b1000_0000) != 0
         );
     }
 
@@ -166,60 +207,40 @@ public class Desk : IDisposable
         await WriteUInt16Async(_input, 0x8001);
     }
 
-    private async Task<byte[]> QueryBytesAsync(Command command)
+    private async Task<byte[]> QueryDPGAsync(Command command, byte[]? value = null)
     {
-        await WriteBytesAsync(_dpg, new byte[] { 0x7f, command, 0x00 });
-        return await ReadBytesAsync(_dpg);
+        if (value == null)
+            await WriteBytesAsync(_dpg, new byte[] { 0x7f, command, 0x00 });
+        else
+            await WriteBytesAsync(_dpg, new byte[] { 0x7f, command, 0x80, 0x01 }.Concat(value).ToArray());
+
+        var result = await ReadBytesAsync(_dpg);
+
+        //responce format is invalid
+        if (result.Length < 2)
+            throw new InvalidDataException();
+
+        //query failed
+        if (result[0] != 0x01)
+            throw new InvalidOperationException();
+
+        return result[2..];
     }
 
-    private async Task<ushort> QueryUInt16Async(Command command)
+    private byte[] UInt16AsLittleEndian(ushort value)
     {
-        var bytes = await QueryBytesAsync(command);
-
-        if (bytes[2] != 0x01)
-            //the value is not defined
-            return 0;
-
-        using var dataReader = DataReader.FromBuffer(bytes.AsBuffer(3, 2));
-        dataReader.ByteOrder = ByteOrder.LittleEndian;
-        return dataReader.ReadUInt16();
+        var result = new byte[2];
+        BinaryPrimitives.WriteUInt16LittleEndian(new Span<byte>(result), value);
+        return result;
     }
 
-    private async Task<byte[]> QueryBytesAsync(Command command, byte[] value)
+    private ushort ReadUInt16LittleEndian(byte[] data, int offset)
     {
-        var data = new byte[] { 0x7f, command, 0x80, 0x01 }.Concat(value).ToArray();
-        await WriteBytesAsync(_dpg, data);
-        return await ReadBytesAsync(_dpg);
+        return BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(data, offset, 2));
     }
 
-    private async Task<byte[]> QueryBytesAsync(Command command, ushort value)
-    {
-        var data = BitConverter.GetBytes(value);
-        if (!BitConverter.IsLittleEndian)
-            Array.Reverse(data);
-        return await QueryBytesAsync(command, data);
-    }
-
-    private async Task ConnectAsync()
-    {
-        _name = await GetCharacteristicAsync(ServiceUUID.Name, CharacteristicUUID.Name);
-        //_model = await GetCharacteristicAsync(ServiceUUID.Model, CharacteristicUUID.Model);
-        _control = await GetCharacteristicAsync(ServiceUUID.Control, CharacteristicUUID.Control);
-        _dpg = await GetCharacteristicAsync(ServiceUUID.DPG, CharacteristicUUID.DPG);
-        _heightSpeedSensor = await GetCharacteristicAsync(ServiceUUID.HeightSpeedSensor, CharacteristicUUID.HeightSpeedSensor);
-        _input = await GetCharacteristicAsync(ServiceUUID.Input, CharacteristicUUID.Input);
-    }
-
-    private void Disconnect()
-    {
-        _device?.Dispose();
-        _name?.Service?.Dispose();
-        //_model?.Service?.Dispose();
-        _control?.Service?.Dispose();
-        _dpg?.Service?.Dispose();
-        _heightSpeedSensor?.Service?.Dispose();
-        _input?.Service?.Dispose();
-    }
+    private static ulong PhysicalAddressToUInt64(PhysicalAddress address) =>
+        BitConverter.ToUInt64(address.GetAddressBytes().Reverse().Concat(new byte[] { 0, 0 }).ToArray());
 
     private async Task<GattCharacteristic> GetCharacteristicAsync(Guid serviceUUID, Guid characteristicUUID)
     {
@@ -230,6 +251,8 @@ public class Desk : IDisposable
             var result = await service.GetCharacteristicsForUuidAsync(characteristicUUID, BluetoothCacheMode.Uncached);
             if (GattCommunicationStatus.Success != result.Status)
                 throw new GattCommunicationException(result.Status.ToString());
+            if (result.Characteristics.Count() == 0)
+                throw new GattCommunicationException("GATT characteristic not found");
             return result.Characteristics[0];
         }
         catch
@@ -244,6 +267,8 @@ public class Desk : IDisposable
         var result = await _device.GetGattServicesForUuidAsync(UUID);
         if (GattCommunicationStatus.Success != result.Status)
             throw new GattCommunicationException(result.Status.ToString());
+        if (result.Services.Count() == 0)
+            throw new GattCommunicationException("GATT service not found");
         return result.Services[0];
     }
 
@@ -308,7 +333,7 @@ public class Desk : IDisposable
 
     private async Task WriteStringAsync(GattCharacteristic characteristic, string value)
     {
-        var bytes = System.Text.Encoding.ASCII.GetBytes(value);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(value);
         var result = await characteristic.WriteValueAsync(bytes.AsBuffer());
         if (GattCommunicationStatus.Success != result)
             throw new GattCommunicationException(result.ToString());

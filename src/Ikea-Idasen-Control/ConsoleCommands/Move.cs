@@ -20,9 +20,19 @@ internal class Move : DeskConsoleCommand
 
         float height;
         if (TryParseMemoryCellNumber(heightString, out byte memoryCellNumber))
-            height = await desk.GetMemoryValueAsync(memoryCellNumber);
+        {
+            var value = await desk.GetMemoryValueAsync(memoryCellNumber);
+            if (value == null)
+            {
+                Console.WriteLine($"Memory position {heightString} is not set yet");
+                return;
+            }
+            height = value.Value;
+        }
         else if (!TryParseHeight(heightString, out height))
+        {
             throw new WrongCommandParameterException($"Height {heightString} is wrong. It must be like '183' if you define it in millimeters, or like 'm1' if you define it as number of memory position");
+        }
 
         Console.WriteLine($"Moving the desk to {height:0} mm");
         await desk.SetHeightAsync(height);
