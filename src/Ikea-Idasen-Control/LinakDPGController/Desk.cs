@@ -140,6 +140,11 @@ public class Desk : IDisposable
         _ = await QueryDPGAsync(GetMemoryPositionCommand(cellNumber), UInt16AsLittleEndian(value).ToArray());
     }
 
+    public async Task ClearMemoryValueAsync(int cellNumber)
+    {
+        _ = await QueryDPGAsync(GetMemoryPositionCommand(cellNumber), new byte[] { 0xFF, 0xFF });
+    }
+
     public void Dispose()
     {
         Disconnect();

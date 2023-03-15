@@ -38,6 +38,7 @@ public class MyDesk : IDisposable
             return MmFromRaw(await _desk.GetOffsetAsync() + value.Value);
     }
     public async Task SetMemoryValueAsync(int cellNumber, float value) => await _desk.SetMemoryValueAsync(cellNumber, RawFromMm(value - await GetMinHeightAsync()));
+    public async Task ClearMemoryValueAsync(int cellNumber) => await _desk.ClearMemoryValueAsync(cellNumber);
     public void Dispose() => _desk.Dispose();
 
     private float MmFromRaw(int raw)

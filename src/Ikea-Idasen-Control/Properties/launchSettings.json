@@ -14,7 +14,11 @@
     },
     "Ikea-Idasen-Control Set": {
       "commandName": "Project",
-      "commandLineArgs": "set -a ec:02:09:df:8e:d8 m3 1110"
+      "commandLineArgs": "set -a ec:02:09:df:8e:d8 m3 1116"
+    },
+    "Ikea-Idasen-Control Clean": {
+      "commandName": "Project",
+      "commandLineArgs": "clean -a ec:02:09:df:8e:d8 m3"
     }
   }
 }

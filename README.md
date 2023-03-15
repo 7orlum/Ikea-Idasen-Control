@@ -42,7 +42,7 @@ Current height is 695 mm
 To set your favorite desk position, use the 'Set' command and the number of your favorite position. 
 Add the word 'current' to save the current table height or the exact height in millimeters:
 ```
-Ikea-Idasen-Control.exe show -a ec:02:09:df:8e:d8 m3 current
+Ikea-Idasen-Control.exe set -a ec:02:09:df:8e:d8 m3 current
 ```
 the output:
 ```
@@ -55,7 +55,7 @@ Memory position 3   623 mm
 ```
 
 ```
-Ikea-Idasen-Control.exe show -a ec:02:09:df:8e:d8 m3 622
+Ikea-Idasen-Control.exe set -a ec:02:09:df:8e:d8 m3 622
 ```
 the output:
 ```
@@ -65,6 +65,19 @@ Minimum height      619 mm
 Memory position 1   695 mm
 Memory position 2  1116 mm
 Memory position 3   622 mm
+```
+To clear your favorite desk position, use the 'Clear' command and the number of your favorite position:
+```
+Ikea-Idasen-Control.exe clear -a ec:02:09:df:8e:d8 m3
+```
+the output:
+```
+Name             Desk 6568
+Current height      623 mm
+Minimum height      619 mm
+Memory position 1   695 mm
+Memory position 2  1116 mm
+Memory position 3
 ```
 
 ## Get current desk state and settings
