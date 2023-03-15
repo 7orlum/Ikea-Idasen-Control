@@ -16,11 +16,6 @@ internal class Show : DeskConsoleCommand
     private async Task ShowDeskStateAsync()
     {
         using var desk = await GetDeskAsync();
-
-        Console.WriteLine($"Name {await desk.GetNameAsync(),21}");
-        Console.WriteLine($"Current height    {await desk.GetHeightAsync(),5:0} mm");
-        Console.WriteLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
-        for (var memoryCellNumber = 1; memoryCellNumber <= desk.NumberOfMemoryCells; memoryCellNumber++)
-            Console.WriteLine($"Memory position {memoryCellNumber} {await desk.GetMemoryValueAsync(memoryCellNumber),5:0} mm");
+        Console.WriteLine(await GetStateAndSettingsReport(desk, ReportSection.Name | ReportSection.Height | ReportSection.MinHeight | ReportSection.Memory));
     }
 }

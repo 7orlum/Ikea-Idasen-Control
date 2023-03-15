@@ -36,6 +36,6 @@ internal class Move : DeskConsoleCommand
 
         Console.WriteLine($"Moving the desk to {height:0} mm");
         await desk.SetHeightAsync(height);
-        Console.WriteLine($"Current height is {await desk.GetHeightAsync():0} mm");
+        Console.WriteLine(await GetStateAndSettingsReport(desk, ReportSection.Height));
     }
 }

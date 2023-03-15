@@ -4,6 +4,7 @@ using IkeaIdasenControl;
 using IkeaIdasenControl.LinakDPGController;
 using ManyConsole;
 using System.Net.NetworkInformation;
+using System.Text;
 
 public abstract class DeskConsoleCommand : ConsoleCommand
 {
@@ -69,5 +70,32 @@ public abstract class DeskConsoleCommand : ConsoleCommand
             };
             return 1;
         }
+    }
+
+
+    protected static async Task<string> GetStateAndSettingsReport(MyDesk desk, ReportSection sections)
+    {
+        var result = new StringBuilder();
+
+        if (sections.HasFlag(ReportSection.Name))
+            result.AppendLine($"Name {await desk.GetNameAsync(),21}");
+
+        if (sections.HasFlag(ReportSection.Height))
+            result.AppendLine($"Current height    {await desk.GetHeightAsync(),5:0} mm");
+        
+        if (sections.HasFlag(ReportSection.MinHeight))
+            result.AppendLine($"Minimum height    {await desk.GetMinHeightAsync(),5:0} mm");
+
+        if (sections.HasFlag(ReportSection.Memory))
+            for (var memoryCellNumber = 1; memoryCellNumber <= desk.NumberOfMemoryCells; memoryCellNumber++)
+            {
+                var memoryValue = await desk.GetMemoryValueAsync(memoryCellNumber);
+                if (memoryValue is null)
+                    result.AppendLine($"Memory position {memoryCellNumber}");
+                else
+                    result.AppendLine($"Memory position {memoryCellNumber} {memoryValue,5:0} mm");
+            }
+
+        return result.ToString();
     }
 }
