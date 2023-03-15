@@ -10,7 +10,7 @@
     <Company>Pavel Veretennikov</Company>
     <Description>A command line utility to control IKEA Idasen desks or others that also use one of the LINAK DPG controllers with BLE</Description>
     <Copyright>© 2023 Pavel Veretennikov 7orlum@gmail.com</Copyright>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
